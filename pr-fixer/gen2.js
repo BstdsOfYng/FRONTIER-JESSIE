@@ -1,0 +1,13 @@
+const fs = require('fs');
+const path = 'src/lib/pipeline.ts';
+let c = '';
+c += 'import { addStage, getJob, incrementFixAttempt, setDiff, updateJobStatus, updateStage } from "./store";\n';
+c += 'import type { ErrorType } from "./types";\n';
+c += 'const MAX_ATTEMPTS = 5;\n';
+c += 'const MAX_EXECUTION_MS = 120_000;\n';
+c += 'const CANNED_DIFFS: Record<ErrorType, { diff: string; explanation: string }> = {\n';
+c += '  lint: {\n';
+c += '    diff: [\n';
+c += "      '--- a/src/utils/format.ts',\n";
+c += "      '+++ b/src/utils/format.ts',\n";
+c += "      '@@ -15,7 +15,7 @@',\n";
