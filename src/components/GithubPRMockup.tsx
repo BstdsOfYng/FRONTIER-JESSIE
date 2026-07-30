@@ -1,16 +1,25 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { GitPullRequest, GitCommit, CheckCircle2, Bot, ExternalLink, Send, ArrowUpRight, Sparkles, MessageSquare } from 'lucide-react';
+import { GitPullRequest, CheckCircle2, Bot, ExternalLink, Send, MessageSquare } from 'lucide-react';
+import { motion } from 'motion/react';
 import { SandboxRun } from '../types';
+import { playTactileSound } from '../utils/sound';
 
 interface GithubPRMockupProps {
   run: SandboxRun;
   githubToken?: string;
   onLivePush?: () => void;
   isPushing?: boolean;
+  soundFxEnabled?: boolean;
 }
 
-export const GithubPRMockup: React.FC<GithubPRMockupProps> = ({ run, githubToken, onLivePush, isPushing }) => {
+export const GithubPRMockup: React.FC<GithubPRMockupProps> = ({
+  run,
+  githubToken,
+  onLivePush,
+  isPushing,
+  soundFxEnabled = true,
+}) => {
   const prCommentText = `## 🤖 AI Self-Healing Agent: PR Hotfix Applied
 
 **Status:** ✅ **Tests Passed in E2B Sandbox** (Execution time: ${((run.executionTimeMs || 2100) / 1000).toFixed(1)}s)
@@ -57,15 +66,18 @@ ${run.diff || '--- a/file.ts\n+++ b/file.ts\n@@ -1,3 +1,3 @@'}
             </p>
           </div>
 
-          <a
+          <motion.a
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => playTactileSound('click', soundFxEnabled)}
             href={`https://github.com/${run.repoOwner}/${run.repoName}/pull/${run.prNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 text-xs font-mono bg-[#141414] hover:bg-[#1a1a1a] text-[#dcdcdc] rounded-md border border-white/10 transition-colors flex items-center space-x-1.5"
+            className="px-3 py-1.5 text-xs font-mono bg-[#141414] hover:bg-[#1a1a1a] text-[#dcdcdc] rounded-md border border-white/10 transition-colors flex items-center space-x-1.5 cursor-pointer"
           >
             <span>View on GitHub</span>
             <ExternalLink className="w-3.5 h-3.5 text-[#a1a1aa]" />
-          </a>
+          </motion.a>
         </div>
       </div>
 
@@ -89,10 +101,15 @@ ${run.diff || '--- a/file.ts\n+++ b/file.ts\n@@ -1,3 +1,3 @@'}
         </div>
 
         {githubToken && onLivePush && (
-          <button
-            onClick={onLivePush}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => {
+              playTactileSound('primary', soundFxEnabled);
+              onLivePush();
+            }}
             disabled={isPushing}
-            className="px-3.5 py-1.5 text-xs font-mono font-bold bg-[#4ade80] hover:bg-[#3ecf73] text-black rounded-md shadow-[0_0_10px_rgba(74,222,128,0.2)] transition-all flex items-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider"
+            className="px-3.5 py-1.5 text-xs font-mono font-bold bg-[#4ade80] hover:bg-[#3ecf73] text-black rounded-md shadow-[0_0_10px_rgba(74,222,128,0.2)] transition-all flex items-center space-x-1.5 disabled:opacity-50 uppercase tracking-wider cursor-pointer"
           >
             {isPushing ? (
               <>
@@ -105,7 +122,7 @@ ${run.diff || '--- a/file.ts\n+++ b/file.ts\n@@ -1,3 +1,3 @@'}
                 <span>Push Hotfix to Real Branch</span>
               </>
             )}
-          </button>
+          </motion.button>
         )}
       </div>
 

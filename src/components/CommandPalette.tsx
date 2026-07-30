@@ -9,13 +9,12 @@ import {
   Activity,
   Volume2,
   VolumeX,
-  Sun,
-  Moon,
   Bot,
   Terminal,
   Zap,
   X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ThemeMode, AgentPersona } from '../types';
 import { playTactileSound } from '../utils/sound';
 
@@ -58,6 +57,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Play className="w-4 h-4 text-[#4ade80]" />,
       shortcut: '⌘R',
       action: () => {
+        playTactileSound('primary', soundFxEnabled);
         onRunAgent();
         onClose();
       }
@@ -70,6 +70,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Radio className="w-4 h-4 text-cyan-400" />,
       shortcut: '⌘W',
       action: () => {
+        playTactileSound('webhook', soundFxEnabled);
         onSimulateWebhook();
         onClose();
       }
@@ -82,8 +83,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Bot className="w-4 h-4 text-purple-400" />,
       active: currentPersona === 'safe_linter',
       action: () => {
+        playTactileSound('toggle', soundFxEnabled);
         onChangePersona('safe_linter');
-        playTactileSound('click', soundFxEnabled);
         onClose();
       }
     },
@@ -95,8 +96,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Zap className="w-4 h-4 text-amber-400" />,
       active: currentPersona === 'aggressive_refactor',
       action: () => {
+        playTactileSound('toggle', soundFxEnabled);
         onChangePersona('aggressive_refactor');
-        playTactileSound('click', soundFxEnabled);
         onClose();
       }
     },
@@ -108,8 +109,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <ShieldCheck className="w-4 h-4 text-emerald-400" />,
       active: currentPersona === 'security_patch',
       action: () => {
+        playTactileSound('toggle', soundFxEnabled);
         onChangePersona('security_patch');
-        playTactileSound('click', soundFxEnabled);
         onClose();
       }
     },
@@ -120,6 +121,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'View diff, logs, and E2B sandbox pipeline',
       icon: <Terminal className="w-4 h-4 text-[#4ade80]" />,
       action: () => {
+        playTactileSound('tab', soundFxEnabled);
         onSelectTab('simulator');
         onClose();
       }
@@ -131,6 +133,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'Inspect live build feeds & PR resolution metrics',
       icon: <Activity className="w-4 h-4 text-[#4ade80]" />,
       action: () => {
+        playTactileSound('tab', soundFxEnabled);
         onSelectTab('status');
         onClose();
       }
@@ -142,6 +145,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'View raw GitHub event deliveries & endpoint details',
       icon: <Radio className="w-4 h-4 text-cyan-400" />,
       action: () => {
+        playTactileSound('tab', soundFxEnabled);
         onSelectTab('webhooks');
         onClose();
       }
@@ -153,6 +157,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'Configure retry budgets, file modification limits, PAT token',
       icon: <ShieldCheck className="w-4 h-4 text-amber-400" />,
       action: () => {
+        playTactileSound('tab', soundFxEnabled);
         onSelectTab('settings');
         onClose();
       }
@@ -164,6 +169,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'View Cloud Run/Lambda serverless architecture specs',
       icon: <Cpu className="w-4 h-4 text-purple-400" />,
       action: () => {
+        playTactileSound('tab', soundFxEnabled);
         onSelectTab('architecture');
         onClose();
       }
@@ -175,6 +181,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       sublabel: 'Audio feedback for clicks, webhooks, and agent execution',
       icon: soundFxEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />,
       action: () => {
+        playTactileSound('toggle', !soundFxEnabled);
         onToggleSoundFx();
         onClose();
       }
@@ -189,8 +196,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   );
 
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
+    if (isOpen) {
+      playTactileSound('openHub', soundFxEnabled);
+    }
+  }, [isOpen, soundFxEnabled]);
+
+  const handleClose = () => {
+    playTactileSound('closeHub', soundFxEnabled);
+    onClose();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val.length < query.length && val === '') {
+      playTactileSound('clear', soundFxEnabled);
+    } else {
+      playTactileSound('keystroke', soundFxEnabled);
+    }
+    setQuery(val);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -210,6 +234,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           filteredCommands[selectedIndex].action();
         }
       } else if (e.key === 'Escape') {
+        playTactileSound('modal', soundFxEnabled);
         onClose();
       }
     };
@@ -221,115 +246,123 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-md animate-fadeIn">
-      <div className={`w-full max-w-2xl rounded-xl border shadow-2xl overflow-hidden transition-all ${
-        isDark ? 'bg-[#0b0f19]/90 border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
-      }`}>
-        {/* Search Header Input */}
-        <div className={`flex items-center px-4 py-3.5 border-b ${isDark ? 'border-white/10 bg-[#070a12]' : 'border-slate-200 bg-slate-50'}`}>
-          <Search className={`w-5 h-5 mr-3 shrink-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or search actions (e.g. 'Fix', 'Persona', 'Webhook')..."
-            className="w-full bg-transparent text-sm focus:outline-none font-mono"
-            autoFocus
-          />
-          <div className="flex items-center space-x-2 shrink-0">
-            <span className={`px-2 py-0.5 text-[10px] font-mono rounded border ${
-              isDark ? 'bg-white/5 border-white/10 text-slate-400' : 'bg-slate-200 border-slate-300 text-slate-600'
-            }`}>
-              ESC
-            </span>
-            <button
-              onClick={onClose}
-              className={`p-1 rounded hover:bg-white/10 transition-colors ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Command Items List */}
-        <div className="max-h-96 overflow-y-auto p-2 space-y-1">
-          {filteredCommands.length === 0 ? (
-            <div className="p-8 text-center text-xs font-mono text-slate-500">
-              No matching commands found for "{query}"
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/75 backdrop-blur-md">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="w-full max-w-2xl rounded-xl border border-white/15 shadow-2xl overflow-hidden bg-[#0b0f19]/95 text-white"
+        >
+          {/* Search Header Input */}
+          <div className="flex items-center px-4 py-3.5 border-b border-white/10 bg-[#070a12]">
+            <Search className="w-5 h-5 mr-3 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={handleInputChange}
+              placeholder="Type a command or search actions (e.g. 'Fix', 'Persona', 'Webhook')..."
+              className="w-full bg-transparent text-sm focus:outline-none font-mono text-white placeholder-slate-500"
+              autoFocus
+            />
+            <div className="flex items-center space-x-2 shrink-0">
+              <span className="px-2 py-0.5 text-[10px] font-mono rounded border bg-white/5 border-white/10 text-slate-400">
+                ESC
+              </span>
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.88 }}
+                onClick={handleClose}
+                className="p-1 rounded hover:bg-white/10 text-slate-400 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </motion.button>
             </div>
-          ) : (
-            filteredCommands.map((cmd, idx) => {
-              const isSelected = idx === selectedIndex;
-              return (
-                <div
-                  key={cmd.id}
-                  onClick={() => cmd.action()}
-                  onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
-                    isSelected
-                      ? isDark
+          </div>
+
+          {/* Command Items List */}
+          <div className="max-h-96 overflow-y-auto p-2 space-y-1">
+            {filteredCommands.length === 0 ? (
+              <div className="p-8 text-center text-xs font-mono text-slate-500">
+                No matching commands found for "{query}"
+              </div>
+            ) : (
+              filteredCommands.map((cmd, idx) => {
+                const isSelected = idx === selectedIndex;
+                return (
+                  <motion.div
+                    key={cmd.id}
+                    whileHover={{ scale: 1.01, x: 2 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      playTactileSound('execCommand', soundFxEnabled);
+                      cmd.action();
+                    }}
+                    onMouseEnter={() => {
+                      if (selectedIndex !== idx) {
+                        setSelectedIndex(idx);
+                        playTactileSound('hover', soundFxEnabled);
+                      }
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                      isSelected
                         ? 'bg-[#1f293d] border border-[#4ade80]/40 text-white shadow-md'
-                        : 'bg-emerald-50 border border-emerald-300 text-slate-900'
-                      : 'hover:bg-white/5 text-slate-300 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-md ${
-                      isDark ? 'bg-[#030712] border border-white/10' : 'bg-white border border-slate-200'
-                    }`}>
-                      {cmd.icon}
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-xs">{cmd.label}</span>
-                        {cmd.active && (
-                          <span className="px-1.5 py-0.2 text-[9px] font-mono bg-[#4ade80]/20 text-[#4ade80] rounded border border-[#4ade80]/30 uppercase">
-                            Active
-                          </span>
-                        )}
+                        : 'hover:bg-white/5 text-slate-300 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-md bg-[#030712] border border-white/10">
+                        {cmd.icon}
                       </div>
-                      <p className={`text-[11px] font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {cmd.sublabel}
-                      </p>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-semibold text-xs">{cmd.label}</span>
+                          {cmd.active && (
+                            <span className="px-1.5 py-0.2 text-[9px] font-mono bg-[#4ade80]/20 text-[#4ade80] rounded border border-[#4ade80]/30 uppercase">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-sans text-slate-400 mt-0.5">
+                          {cmd.sublabel}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-2 shrink-0">
-                    <span className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded ${
-                      isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {cmd.category}
-                    </span>
-                    {cmd.shortcut && (
-                      <span className="text-[11px] font-mono font-bold text-[#4ade80] bg-[#4ade80]/10 px-2 py-0.5 rounded border border-[#4ade80]/20">
-                        {cmd.shortcut}
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                        {cmd.category}
                       </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                      {cmd.shortcut && (
+                        <span className="text-[11px] font-mono font-bold text-[#4ade80] bg-[#4ade80]/10 px-2 py-0.5 rounded border border-[#4ade80]/20">
+                          {cmd.shortcut}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
 
-        {/* Command Palette Footer */}
-        <div className={`px-4 py-2.5 border-t flex items-center justify-between text-[11px] font-mono ${
-          isDark ? 'border-white/10 bg-[#070a12] text-slate-500' : 'border-slate-200 bg-slate-50 text-slate-500'
-        }`}>
-          <div className="flex items-center space-x-3">
-            <span>
-              Use <kbd className="px-1 py-0.5 bg-white/10 rounded">↑</kbd> <kbd className="px-1 py-0.5 bg-white/10 rounded">↓</kbd> to navigate
-            </span>
-            <span>
-              <kbd className="px-1 py-0.5 bg-white/10 rounded">↵</kbd> to select
-            </span>
+          {/* Command Palette Footer */}
+          <div className="px-4 py-2.5 border-t border-white/10 bg-[#070a12] text-slate-500 flex items-center justify-between text-[11px] font-mono">
+            <div className="flex items-center space-x-3">
+              <span>
+                Use <kbd className="px-1 py-0.5 bg-white/10 rounded">↑</kbd> <kbd className="px-1 py-0.5 bg-white/10 rounded">↓</kbd> to navigate
+              </span>
+              <span>
+                <kbd className="px-1 py-0.5 bg-white/10 rounded">↵</kbd> to select
+              </span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Command className="w-3 h-3" />
+              <span>Cyber Command Hub</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-1">
-            <Command className="w-3 h-3" />
-            <span>Cyber Command Hub</span>
-          </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </AnimatePresence>
   );
 };

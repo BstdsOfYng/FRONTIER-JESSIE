@@ -1,96 +1,97 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity,
-  Play,
-  Pause,
-  RotateCw,
   CheckCircle2,
   AlertCircle,
   Clock,
-  Cpu,
-  Layers,
-  ArrowUpRight,
-  Sparkles,
-  Terminal,
-  Filter
+  RotateCw,
+  Pause,
+  Play,
+  Filter,
+  ArrowUpRight
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { MonitoredPRStatus, ThemeMode } from '../types';
+import { playTactileSound } from '../utils/sound';
 
 interface RealTimeStatusProps {
   theme?: ThemeMode;
   onSelectPR?: (prNumber: number) => void;
+  soundFxEnabled?: boolean;
 }
 
 const INITIAL_MONITORED_PRS: MonitoredPRStatus[] = [
   {
     id: 'pr-1402',
-    prNumber: 1402,
     repoOwner: 'facebook',
     repoName: 'react',
-    title: 'Fix failing auth-middleware unit tests in dev environment',
+    prNumber: 1402,
+    title: 'Fix failing auth-middleware unit tests in React Server Components',
     branch: 'fix/auth-middleware',
     author: 'dan_abramov',
-    status: 'iterating',
-    attempt: 2,
-    maxAttempts: 3,
-    progressPercent: 65,
-    activeStep: 'E2B Sandbox: Rerunning Jest test runner after applying patch...',
-    timeElapsedSeconds: 84,
-    etaSeconds: 25,
-    lastUpdated: 'Just now',
-  },
-  {
-    id: 'pr-1398',
-    prNumber: 1398,
-    repoOwner: 'vercel',
-    repoName: 'next.js',
-    title: 'Resolve ESLint syntax violations in components/auth.tsx',
-    branch: 'linter-clean-up',
-    author: 'timneutkens',
     status: 'passing',
     attempt: 1,
     maxAttempts: 3,
     progressPercent: 100,
-    activeStep: 'Hotfix commit a4f891b pushed & GitHub check suite green',
+    activeStep: 'All test suites passing. Patch verified in E2B container.',
     timeElapsedSeconds: 42,
-    lastUpdated: '2 mins ago',
+    etaSeconds: 0,
+    lastUpdated: '1 min ago',
   },
   {
-    id: 'pr-1405',
-    prNumber: 1405,
-    repoOwner: 'nodejs',
-    repoName: 'node',
-    title: 'Fix memory leak in worker pool connection tear down',
-    branch: 'worker-leak-patch',
-    author: 'mcollina',
+    id: 'pr-8821',
+    repoOwner: 'vercel',
+    repoName: 'next.js',
+    prNumber: 8821,
+    title: 'Sanitize URL search parameters in SSR middleware renderer',
+    branch: 'linter-clean-up',
+    author: 'timneutkens',
     status: 'analyzing',
-    attempt: 1,
+    attempt: 2,
     maxAttempts: 3,
-    progressPercent: 35,
-    activeStep: 'Gemini 3.6 Flash: Analyzing stack trace & constructing diff patch...',
-    timeElapsedSeconds: 28,
-    etaSeconds: 45,
+    progressPercent: 55,
+    activeStep: 'Gemini 3.6 Flash: Generating AST diff for router-utils.ts...',
+    timeElapsedSeconds: 18,
+    etaSeconds: 15,
     lastUpdated: 'Just now',
   },
   {
-    id: 'pr-1392',
-    prNumber: 1392,
+    id: 'pr-3921',
+    repoOwner: 'nodejs',
+    repoName: 'node',
+    prNumber: 3921,
+    title: 'Fix worker thread memory leak on graceful shutdown event loop',
+    branch: 'worker-leak-patch',
+    author: 'addaleax',
+    status: 'reproducing',
+    attempt: 1,
+    maxAttempts: 3,
+    progressPercent: 25,
+    activeStep: 'E2B Sandbox Container: Executing C++ valgrind memory profiler...',
+    timeElapsedSeconds: 12,
+    etaSeconds: 30,
+    lastUpdated: 'Just now',
+  },
+  {
+    id: 'pr-9021',
     repoOwner: 'prisma',
     repoName: 'prisma',
-    title: 'Fix race condition during concurrent transaction commits',
+    prNumber: 9021,
+    title: 'Fix connection pool race condition in transaction engine',
     branch: 'fix-conn-race',
     author: 'janpio',
     status: 'failed',
     attempt: 3,
     maxAttempts: 3,
     progressPercent: 100,
-    activeStep: 'Max retry attempts exhausted. Non-deterministic concurrency issue.',
-    timeElapsedSeconds: 195,
+    activeStep: 'Max attempt budget reached (3/3). Human code review requested.',
+    timeElapsedSeconds: 120,
+    etaSeconds: 0,
     lastUpdated: '12 mins ago',
   }
 ];
 
-export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) => {
+export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR, soundFxEnabled = true }) => {
   const [prs, setPrs] = useState<MonitoredPRStatus[]>(INITIAL_MONITORED_PRS);
   const [filter, setFilter] = useState<'all' | 'active' | 'passing' | 'failed'>('all');
   const [isLiveStreaming, setIsLiveStreaming] = useState<boolean>(true);
@@ -118,6 +119,7 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
             newProgress = 100;
             newStatus = 'passing';
             newStep = 'All tests passed! Hotfix commit verified and pushed.';
+            playTactileSound('success', soundFxEnabled);
           } else if (newProgress > 75 && pr.status !== 'iterating') {
             newStatus = 'iterating';
             newStep = 'E2B Sandbox: Verifying patched build with test suite...';
@@ -140,9 +142,10 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [isLiveStreaming]);
+  }, [isLiveStreaming, soundFxEnabled]);
 
   const handleRestartPR = (prId: string) => {
+    playTactileSound('beacon', soundFxEnabled);
     setPrs((prev) =>
       prev.map((pr) => {
         if (pr.id === prId) {
@@ -162,39 +165,45 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
     );
   };
 
-  const filteredPrs = prs.filter((pr) => {
-    if (filter === 'active') return pr.status !== 'passing' && pr.status !== 'failed';
-    if (filter === 'passing') return pr.status === 'passing';
-    if (filter === 'failed') return pr.status === 'failed';
+  const handleToggleStream = () => {
+    playTactileSound('toggle', soundFxEnabled);
+    setIsLiveStreaming(!isLiveStreaming);
+  };
+
+  const handleFilterChange = (f: 'all' | 'active' | 'passing' | 'failed') => {
+    playTactileSound('tab', soundFxEnabled);
+    setFilter(f);
+  };
+
+  const filteredPrs = prs.filter((p) => {
+    if (filter === 'active') return ['reproducing', 'analyzing', 'patching', 'verifying', 'iterating', 'queued'].includes(p.status);
+    if (filter === 'passing') return p.status === 'passing';
+    if (filter === 'failed') return p.status === 'failed';
     return true;
   });
 
-  const activeCount = prs.filter((p) => p.status !== 'passing' && p.status !== 'failed').length;
-  const passingCount = prs.filter((p) => p.status === 'passing').length;
   const totalCount = prs.length;
+  const activeCount = prs.filter((p) => ['reproducing', 'analyzing', 'patching', 'verifying', 'iterating', 'queued'].includes(p.status)).length;
+  const passingCount = prs.filter((p) => p.status === 'passing').length;
 
   const formatSeconds = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}m ${s < 10 ? '0' : ''}${s}s`;
+    const mins = Math.floor(sec / 60);
+    const remainder = sec % 60;
+    return `${mins}m ${remainder < 10 ? '0' : ''}${remainder}s`;
   };
 
   const getStatusBadge = (status: MonitoredPRStatus['status']) => {
     switch (status) {
       case 'passing':
         return (
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            isDark ? 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/30' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-          }`}>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/30">
             <CheckCircle2 className="w-3 h-3 text-[#4ade80]" />
             Passing & Pushed
           </span>
         );
       case 'failed':
         return (
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            isDark ? 'bg-red-500/10 text-red-400 border border-red-500/30' : 'bg-red-100 text-red-800 border border-red-300'
-          }`}>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/30">
             <AlertCircle className="w-3 h-3 text-red-400" />
             Budget Exhausted
           </span>
@@ -205,9 +214,7 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
       case 'queued':
       default:
         return (
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-            isDark ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-amber-100 text-amber-800 border border-amber-300'
-          }`}>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
             Active ({status})
           </span>
@@ -218,33 +225,29 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className={`p-6 rounded-xl border transition-colors shadow-2xl ${
-        isDark ? 'bg-[#050505] border-[#1a1a1a]' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
-      }`}>
+      <div className="p-6 rounded-xl border transition-colors shadow-2xl bg-[#050505] border-[#1a1a1a]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2">
-              <Activity className={`w-5 h-5 ${isDark ? 'text-[#4ade80]' : 'text-emerald-600'} animate-pulse`} />
-              <h2 className={`text-xl font-serif italic ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <Activity className="w-5 h-5 text-[#4ade80] animate-pulse" />
+              <h2 className="text-xl font-serif italic text-white">
                 Real-Time PR Build Status Monitor
               </h2>
             </div>
-            <p className={`text-xs mt-1 font-sans ${isDark ? 'text-[#a1a1aa]' : 'text-slate-500'}`}>
+            <p className="text-xs mt-1 font-sans text-[#a1a1aa]">
               Live agent monitoring & sandbox build status feeds across active repositories.
             </p>
           </div>
 
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setIsLiveStreaming(!isLiveStreaming)}
-              className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all flex items-center space-x-1.5 border ${
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.93 }}
+              onClick={handleToggleStream}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all flex items-center space-x-1.5 border cursor-pointer ${
                 isLiveStreaming
-                  ? isDark
-                    ? 'bg-[#141414] text-[#4ade80] border-[#4ade80]/40'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : isDark
-                    ? 'bg-[#0c0c0c] text-[#a1a1aa] border-[#1a1a1a]'
-                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                  ? 'bg-[#141414] text-[#4ade80] border-[#4ade80]/40'
+                  : 'bg-[#0c0c0c] text-[#a1a1aa] border-[#1a1a1a]'
               }`}
             >
               {isLiveStreaming ? (
@@ -258,11 +261,9 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
                   <span>Resume Stream</span>
                 </>
               )}
-            </button>
+            </motion.button>
 
-            <span className={`text-[11px] font-mono px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${
-              isDark ? 'bg-[#0a0a0a] border-[#1a1a1a] text-[#a1a1aa]' : 'bg-slate-100 border-slate-200 text-slate-600'
-            }`}>
+            <span className="text-[11px] font-mono px-2.5 py-1 rounded-md border flex items-center gap-1.5 bg-[#0a0a0a] border-[#1a1a1a] text-[#a1a1aa]">
               <span className={`w-2 h-2 rounded-full ${isLiveStreaming ? 'bg-[#4ade80] shadow-[0_0_6px_#4ade80]' : 'bg-slate-400'}`} />
               WS PORT 3000
             </span>
@@ -270,41 +271,39 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
         </div>
 
         {/* Metric Summary Bar */}
-        <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t ${
-          isDark ? 'border-[#1a1a1a]' : 'border-slate-200'
-        }`}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#1a1a1a]">
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-widest font-mono ${isDark ? 'text-[#a1a1aa]' : 'text-slate-400'}`}>
+            <span className="text-[10px] uppercase tracking-widest font-mono text-[#a1a1aa]">
               Monitored PRs
             </span>
-            <div className={`text-2xl font-serif italic ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <div className="text-2xl font-serif italic text-white">
               {totalCount} <span className="text-xs font-sans font-normal opacity-50">Active Jobs</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-widest font-mono ${isDark ? 'text-[#a1a1aa]' : 'text-slate-400'}`}>
+            <span className="text-[10px] uppercase tracking-widest font-mono text-[#a1a1aa]">
               E2B Sandboxes
             </span>
-            <div className={`text-2xl font-serif italic ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+            <div className="text-2xl font-serif italic text-amber-400">
               {activeCount} <span className="text-xs font-sans font-normal opacity-50">Running</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-widest font-mono ${isDark ? 'text-[#a1a1aa]' : 'text-slate-400'}`}>
+            <span className="text-[10px] uppercase tracking-widest font-mono text-[#a1a1aa]">
               Auto-Fixed
             </span>
-            <div className={`text-2xl font-serif italic ${isDark ? 'text-[#4ade80]' : 'text-emerald-600'}`}>
+            <div className="text-2xl font-serif italic text-[#4ade80]">
               {passingCount} <span className="text-xs font-sans font-normal opacity-50">({Math.round((passingCount / totalCount) * 100)}%)</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <span className={`text-[10px] uppercase tracking-widest font-mono ${isDark ? 'text-[#a1a1aa]' : 'text-slate-400'}`}>
+            <span className="text-[10px] uppercase tracking-widest font-mono text-[#a1a1aa]">
               Avg Resolution
             </span>
-            <div className={`text-2xl font-serif italic ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <div className="text-2xl font-serif italic text-white">
               1.4m <span className="text-xs font-sans font-normal opacity-50">per PR</span>
             </div>
           </div>
@@ -312,34 +311,30 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
       </div>
 
       {/* Filter and List Section */}
-      <div className={`p-6 rounded-xl border transition-colors shadow-2xl space-y-4 ${
-        isDark ? 'bg-[#050505] border-[#1a1a1a]' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
-      }`}>
+      <div className="p-6 rounded-xl border transition-colors shadow-2xl space-y-4 bg-[#050505] border-[#1a1a1a]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-[#1a1a1a]">
           <div className="flex items-center space-x-2">
-            <Filter className={`w-4 h-4 ${isDark ? 'text-[#a1a1aa]' : 'text-slate-500'}`} />
-            <span className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>
+            <Filter className="w-4 h-4 text-[#a1a1aa]" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
               Filter Monitored Pipelines
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
             {(['all', 'active', 'passing', 'failed'] as const).map((f) => (
-              <button
+              <motion.button
                 key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1 rounded-md text-xs font-mono capitalize transition-all border ${
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => handleFilterChange(f)}
+                className={`px-3 py-1 rounded-md text-xs font-mono capitalize transition-all border cursor-pointer ${
                   filter === f
-                    ? isDark
-                      ? 'bg-[#141414] text-white border-white/20 shadow-sm'
-                      : 'bg-slate-900 text-white border-slate-900'
-                    : isDark
-                      ? 'bg-[#080808] text-[#a1a1aa] border-[#1a1a1a] hover:text-white'
-                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    ? 'bg-[#141414] text-white border-white/20 shadow-sm'
+                    : 'bg-[#080808] text-[#a1a1aa] border-[#1a1a1a] hover:text-white'
                 }`}
               >
                 {f}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -347,61 +342,56 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
         {/* PR Status List */}
         <div className="space-y-4">
           {filteredPrs.map((pr) => (
-            <div
+            <motion.div
               key={pr.id}
-              className={`p-5 rounded-lg border transition-all space-y-3 ${
-                isDark
-                  ? 'bg-[#080808] border-[#1a1a1a] hover:border-white/10'
-                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-              }`}
+              whileHover={{ scale: 1.005 }}
+              className="p-5 rounded-lg border transition-all space-y-3 bg-[#080808] border-[#1a1a1a] hover:border-white/10"
             >
               {/* Top Row: Repo/PR + Status */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center space-x-3 flex-wrap">
-                  <span className={`font-mono text-xs font-bold ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+                  <span className="font-mono text-xs font-bold text-white/70">
                     {pr.repoOwner}/{pr.repoName}
                   </span>
-                  <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded ${
-                    isDark ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20' : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
                     PR #{pr.prNumber}
                   </span>
-                  <span className={`text-xs font-mono ${isDark ? 'text-[#a1a1aa]' : 'text-slate-500'}`}>
+                  <span className="text-xs font-mono text-[#a1a1aa]">
                     branch: <code className="text-blue-400">{pr.branch}</code>
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-3">
                   {getStatusBadge(pr.status)}
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.88 }}
                     onClick={() => handleRestartPR(pr.id)}
-                    className={`p-1.5 rounded transition-colors ${
-                      isDark ? 'hover:bg-[#141414] text-[#a1a1aa] hover:text-white' : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
-                    }`}
+                    className="p-1.5 rounded transition-colors hover:bg-[#141414] text-[#a1a1aa] hover:text-white cursor-pointer"
                     title="Rerun agent build"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
               {/* Title */}
-              <h3 className={`font-serif italic text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className="font-serif italic text-base text-white">
                 {pr.title}
               </h3>
 
               {/* Progress Bar & Active Step */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className={isDark ? 'text-white/80' : 'text-slate-700'}>
+                  <span className="text-white/80">
                     {pr.activeStep}
                   </span>
-                  <span className={isDark ? 'text-[#4ade80]' : 'text-emerald-600 font-bold'}>
+                  <span className="text-[#4ade80]">
                     {pr.progressPercent}%
                   </span>
                 </div>
 
-                <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-[#1a1a1a]' : 'bg-slate-200'}`}>
+                <div className="w-full h-2 rounded-full overflow-hidden bg-[#1a1a1a]">
                   <div
                     className={`h-full transition-all duration-500 rounded-full ${
                       pr.status === 'passing'
@@ -416,12 +406,10 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
               </div>
 
               {/* Footer Meta: Attempt, Elapsed, Author */}
-              <div className={`pt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] font-mono gap-2 border-t ${
-                isDark ? 'border-[#1a1a1a] text-[#a1a1aa]' : 'border-slate-200 text-slate-500'
-              }`}>
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] font-mono gap-2 border-t border-[#1a1a1a] text-[#a1a1aa]">
                 <div className="flex items-center space-x-4">
                   <span>
-                    Attempt: <strong className={isDark ? 'text-white' : 'text-slate-900'}>{pr.attempt}/{pr.maxAttempts}</strong>
+                    Attempt: <strong className="text-white">{pr.attempt}/{pr.maxAttempts}</strong>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-amber-400" />
@@ -431,18 +419,21 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ onSelectPR }) =>
                 </div>
 
                 {onSelectPR && (
-                  <button
-                    onClick={() => onSelectPR(pr.prNumber)}
-                    className={`text-xs font-bold hover:underline flex items-center gap-1 ${
-                      isDark ? 'text-[#4ade80]' : 'text-emerald-600'
-                    }`}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => {
+                      playTactileSound('tab', soundFxEnabled);
+                      onSelectPR(pr.prNumber);
+                    }}
+                    className="text-xs font-bold hover:underline flex items-center gap-1 text-[#4ade80] cursor-pointer"
                   >
                     <span>Inspect in Simulator</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
-                  </button>
+                  </motion.button>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

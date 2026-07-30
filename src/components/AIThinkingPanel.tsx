@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Brain,
   Terminal,
@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   RotateCw
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { LogEntry, ThemeMode } from '../types';
 import { playTactileSound } from '../utils/sound';
 
@@ -37,7 +38,6 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
   soundFxEnabled = true,
 }) => {
   const [copiedLogs, setCopiedLogs] = useState(false);
-  const isDark = true;
 
   const isComplete = status === 'resolved';
   const isFailed = status === 'failed';
@@ -52,9 +52,7 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
   };
 
   return (
-    <aside className={`p-4 rounded-xl border transition-all space-y-5 shadow-2xl flex flex-col h-full justify-between ${
-      isDark ? 'bg-[#0b0f19]/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-    }`}>
+    <aside className="p-4 rounded-xl border transition-all space-y-5 shadow-2xl flex flex-col h-full justify-between bg-[#0b0f19]/80 border-white/10 text-white">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-3 border-white/10">
@@ -62,13 +60,15 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
             <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
             <h2 className="font-serif italic text-base font-bold text-white">AI Thinking Panel</h2>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
             onClick={handleCopyLogs}
-            className="p-1 text-slate-400 hover:text-white rounded transition-colors"
+            className="p-1 text-slate-400 hover:text-white rounded transition-colors cursor-pointer"
             title="Copy Logs"
           >
             {copiedLogs ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
+          </motion.button>
         </div>
 
         {/* Action Command Center Buttons */}
@@ -78,13 +78,15 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
           </div>
 
           <div className="grid grid-cols-1 gap-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.94 }}
               onClick={() => {
                 onApproveAndMerge();
                 playTactileSound('success', soundFxEnabled);
               }}
               disabled={isRunning || isFailed}
-              className={`w-full py-2.5 px-3 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center space-x-2 border uppercase tracking-wider ${
+              className={`w-full py-2.5 px-3 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center space-x-2 border uppercase tracking-wider cursor-pointer ${
                 isComplete
                   ? 'bg-[#4ade80] text-black border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.4)] hover:bg-[#3ecf73]'
                   : 'bg-[#4ade80]/20 text-[#4ade80] border-[#4ade80]/40 hover:bg-[#4ade80]/30 disabled:opacity-40'
@@ -92,19 +94,21 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Approve & Merge Fix</span>
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.94 }}
               onClick={() => {
                 onDeclineAndRevert();
                 playTactileSound('alert', soundFxEnabled);
               }}
               disabled={isRunning}
-              className="w-full py-2 px-3 rounded-lg font-mono text-xs font-bold bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/40 transition-all flex items-center justify-center space-x-2 uppercase tracking-wider disabled:opacity-40"
+              className="w-full py-2 px-3 rounded-lg font-mono text-xs font-bold bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/40 transition-all flex items-center justify-center space-x-2 uppercase tracking-wider disabled:opacity-40 cursor-pointer"
             >
               <XCircle className="w-3.5 h-3.5" />
               <span>Decline & Revert Patch</span>
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -169,16 +173,18 @@ export const AIThinkingPanel: React.FC<AIThinkingPanelProps> = ({
       </div>
 
       {/* Rerun Trigger Footer */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.94 }}
         onClick={() => {
           onRunAgent();
           playTactileSound('beacon', soundFxEnabled);
         }}
-        className="w-full py-2 bg-[#141414] hover:bg-[#1f293d] text-white border border-white/10 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center space-x-2"
+        className="w-full py-2 bg-[#141414] hover:bg-[#1f293d] text-white border border-white/10 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer"
       >
         <RotateCw className="w-3.5 h-3.5 text-[#4ade80]" />
         <span>Rerun AI Analysis Loop</span>
-      </button>
+      </motion.button>
     </aside>
   );
 };

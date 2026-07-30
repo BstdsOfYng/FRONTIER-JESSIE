@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Activity
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { AgentSettings, AgentPersona, ThemeMode } from '../types';
 import { playTactileSound } from '../utils/sound';
 
@@ -42,8 +43,8 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
   const soundFx = settings.soundFxEnabled ?? true;
 
   const handlePersonaChange = (p: AgentPersona) => {
+    playTactileSound('toggle', soundFx);
     onUpdateSettings({ ...settings, persona: p });
-    playTactileSound('click', soundFx);
   };
 
   const handleConfidenceChange = (val: number) => {
@@ -51,33 +52,33 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
   };
 
   const handleToggleCVEs = () => {
+    playTactileSound('toggle', soundFx);
     onUpdateSettings({ ...settings, autoFixCVEs: !settings.autoFixCVEs });
-    playTactileSound('click', soundFx);
   };
 
   const handleToggleSound = () => {
-    onUpdateSettings({ ...settings, soundFxEnabled: !soundFx });
+    const nextSoundState = !soundFx;
+    playTactileSound('toggle', nextSoundState);
+    onUpdateSettings({ ...settings, soundFxEnabled: nextSoundState });
   };
 
   return (
-    <aside className={`p-4 rounded-xl border transition-all space-y-6 shadow-2xl ${
-      isDark ? 'bg-[#0b0f19]/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-    }`}>
+    <aside className="p-4 rounded-xl border transition-all space-y-6 shadow-2xl bg-[#0b0f19]/80 border-white/10 text-white">
       {/* Sidebar Header */}
       <div className="flex items-center justify-between border-b pb-3 border-white/10">
         <div className="flex items-center space-x-2">
           <Activity className="w-4 h-4 text-[#4ade80]" />
           <h2 className="font-serif italic text-base font-bold text-white">Agent Control Tower</h2>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.88 }}
           onClick={handleToggleSound}
-          className={`p-1.5 rounded transition-colors ${
-            isDark ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500'
-          }`}
+          className="p-1.5 rounded transition-colors hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
           title={soundFx ? 'Mute Sound FX' : 'Enable Sound FX'}
         >
           {soundFx ? <Volume2 className="w-3.5 h-3.5 text-amber-400" /> : <VolumeX className="w-3.5 h-3.5" />}
-        </button>
+        </motion.button>
       </div>
 
       {/* 1. Connected Repositories */}
@@ -94,15 +95,17 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
           {CONNECTED_REPOS.map((repo) => {
             const isSelected = selectedRepo === repo.fullName;
             return (
-              <div
+              <motion.div
                 key={repo.fullName}
+                whileHover={{ scale: 1.015, x: 2 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   onSelectRepo(repo.fullName);
                   playTactileSound('click', soundFx);
                 }}
                 className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
                   isSelected
-                    ? 'bg-[#1f293d] border-[#4ade80] shadow-md'
+                    ? 'bg-[#1f293d] border-[#4ade80] shadow-[0_0_12px_rgba(74,222,128,0.15)]'
                     : 'bg-[#05070f] border-white/5 hover:bg-white/5'
                 }`}
               >
@@ -121,7 +124,7 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
                     {repo.activePRs} PR
                   </span>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -143,10 +146,12 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
           ].map((persona) => {
             const isActive = currentPersona === persona.id;
             return (
-              <button
+              <motion.button
                 key={persona.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => handlePersonaChange(persona.id as AgentPersona)}
-                className={`p-2 rounded-lg border text-left transition-all flex items-center space-x-2.5 ${
+                className={`p-2 rounded-lg border text-left transition-all flex items-center space-x-2.5 cursor-pointer ${
                   isActive
                     ? 'bg-[#1e1b4b] border-purple-500/60 text-white shadow-sm'
                     : 'bg-[#05070f] border-white/5 hover:bg-white/5 text-slate-400'
@@ -157,7 +162,7 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
                   <span className="font-mono text-xs font-bold block text-white truncate">{persona.name}</span>
                   <span className="text-[10px] font-sans text-slate-400 block truncate">{persona.desc}</span>
                 </div>
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -175,7 +180,8 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
           max="95"
           value={confidence}
           onChange={(e) => handleConfidenceChange(Number(e.target.value))}
-          className="w-full accent-[#4ade80]"
+          onPointerUp={() => playTactileSound('toggle', soundFx)}
+          className="w-full accent-[#4ade80] cursor-pointer"
         />
         <p className="text-[10px] font-sans text-slate-400">
           Requires {confidence}% AI certainty score before executing live GitHub auto-commits.
@@ -190,28 +196,36 @@ export const ControlTowerSidebar: React.FC<ControlTowerSidebarProps> = ({
         </div>
 
         <div className="space-y-1.5 text-xs">
-          <label className="flex items-center justify-between p-2 rounded bg-[#05070f] border border-white/5 cursor-pointer hover:border-white/20">
+          <motion.label 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center justify-between p-2 rounded bg-[#05070f] border border-white/5 cursor-pointer hover:border-white/20"
+          >
             <span className="font-sans text-slate-300 text-xs">Auto-fix High CVEs</span>
             <input
               type="checkbox"
               checked={settings.autoFixCVEs ?? true}
               onChange={handleToggleCVEs}
-              className="accent-[#4ade80] rounded"
+              className="accent-[#4ade80] rounded cursor-pointer"
             />
-          </label>
+          </motion.label>
 
-          <label className="flex items-center justify-between p-2 rounded bg-[#05070f] border border-white/5 cursor-pointer hover:border-white/20">
+          <motion.label 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center justify-between p-2 rounded bg-[#05070f] border border-white/5 cursor-pointer hover:border-white/20"
+          >
             <span className="font-sans text-slate-300 text-xs">Deterministic Tests Only</span>
             <input
               type="checkbox"
               checked={settings.onlyDeterministicTests}
               onChange={() => {
                 onUpdateSettings({ ...settings, onlyDeterministicTests: !settings.onlyDeterministicTests });
-                playTactileSound('click', soundFx);
+                playTactileSound('toggle', soundFx);
               }}
-              className="accent-[#4ade80] rounded"
+              className="accent-[#4ade80] rounded cursor-pointer"
             />
-          </label>
+          </motion.label>
         </div>
       </div>
     </aside>

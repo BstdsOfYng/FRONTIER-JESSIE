@@ -1,13 +1,21 @@
 import React from 'react';
-import { FileCode, CheckCircle2, Copy, ArrowRight } from 'lucide-react';
+import { FileCode, CheckCircle2, Copy } from 'lucide-react';
+import { motion } from 'motion/react';
+import { playTactileSound } from '../utils/sound';
 
 interface DiffViewerProps {
   filename: string;
   originalCode: string;
   patchedCode: string;
+  soundFxEnabled?: boolean;
 }
 
-export const DiffViewer: React.FC<DiffViewerProps> = ({ filename, originalCode, patchedCode }) => {
+export const DiffViewer: React.FC<DiffViewerProps> = ({
+  filename,
+  originalCode,
+  patchedCode,
+  soundFxEnabled = true,
+}) => {
   const [copied, setCopied] = React.useState(false);
 
   const origLines = originalCode ? originalCode.split('\n') : [];
@@ -16,6 +24,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ filename, originalCode, 
   const handleCopy = () => {
     navigator.clipboard.writeText(patchedCode);
     setCopied(true);
+    playTactileSound('click', soundFxEnabled);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -29,9 +38,11 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ filename, originalCode, 
             Unified Diff Patch
           </span>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.92 }}
           onClick={handleCopy}
-          className="px-2.5 py-1 text-xs font-mono bg-[#141414] hover:bg-[#1a1a1a] text-[#dcdcdc] rounded transition-colors flex items-center space-x-1 border border-white/10"
+          className="px-2.5 py-1 text-xs font-mono bg-[#141414] hover:bg-[#1a1a1a] text-[#dcdcdc] rounded transition-colors flex items-center space-x-1 border border-white/10 cursor-pointer"
         >
           {copied ? (
             <>
@@ -44,7 +55,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ filename, originalCode, 
               <span>Copy Fix</span>
             </>
           )}
-        </button>
+        </motion.button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#1a1a1a] font-mono text-xs overflow-x-auto max-h-[460px]">

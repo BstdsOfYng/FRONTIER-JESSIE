@@ -1,18 +1,26 @@
 import React from 'react';
 import { AgentSettings, ThemeMode } from '../types';
-import { ShieldCheck, Key, Lock, Cpu, Sliders, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { ShieldCheck, Key, CheckCircle2, Save } from 'lucide-react';
+import { motion } from 'motion/react';
+import { playTactileSound } from '../utils/sound';
 
 interface SettingsPanelProps {
   settings: AgentSettings;
   onSaveSettings: (settings: AgentSettings) => void;
   theme?: ThemeMode;
+  soundFxEnabled?: boolean;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSettings, theme = 'dark' }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  settings,
+  onSaveSettings,
+  soundFxEnabled = true,
+}) => {
   const [localSettings, setLocalSettings] = React.useState<AgentSettings>(settings);
   const [savedSuccess, setSavedSuccess] = React.useState(false);
 
   const handleSave = () => {
+    playTactileSound('primary', soundFxEnabled);
     onSaveSettings(localSettings);
     if (typeof window !== 'undefined') {
       localStorage.setItem('agent_settings', JSON.stringify(localSettings));
@@ -49,7 +57,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
                 min="1"
                 max="5"
                 value={localSettings.maxAttempts}
-                onChange={(e) => setLocalSettings({ ...localSettings, maxAttempts: Number(e.target.value) })}
+                onChange={(e) => {
+                  playTactileSound('click', soundFxEnabled);
+                  setLocalSettings({ ...localSettings, maxAttempts: Number(e.target.value) });
+                }}
                 className="w-full accent-[#4ade80]"
               />
               <p className="text-[11px] text-[#a1a1aa] font-sans">
@@ -67,7 +78,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
                 min="1"
                 max="5"
                 value={localSettings.maxFilesModified}
-                onChange={(e) => setLocalSettings({ ...localSettings, maxFilesModified: Number(e.target.value) })}
+                onChange={(e) => {
+                  playTactileSound('click', soundFxEnabled);
+                  setLocalSettings({ ...localSettings, maxFilesModified: Number(e.target.value) });
+                }}
                 className="w-full accent-[#4ade80]"
               />
               <p className="text-[11px] text-[#a1a1aa] font-sans">
@@ -78,12 +92,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
 
           {/* Policy Toggles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="flex items-start space-x-3 p-4 bg-[#080808] rounded-lg border border-[#1a1a1a] cursor-pointer hover:border-white/20 transition-colors">
+            <motion.label
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-start space-x-3 p-4 bg-[#080808] rounded-lg border border-[#1a1a1a] cursor-pointer hover:border-white/20 transition-colors"
+            >
               <input
                 type="checkbox"
                 checked={localSettings.onlyDeterministicTests}
-                onChange={(e) => setLocalSettings({ ...localSettings, onlyDeterministicTests: e.target.checked })}
-                className="mt-1 accent-[#4ade80] rounded w-4 h-4"
+                onChange={(e) => {
+                  playTactileSound('toggle', soundFxEnabled);
+                  setLocalSettings({ ...localSettings, onlyDeterministicTests: e.target.checked });
+                }}
+                className="mt-1 accent-[#4ade80] rounded w-4 h-4 cursor-pointer"
               />
               <div>
                 <span className="text-xs font-bold text-white block font-sans">Deterministic Tests Only</span>
@@ -91,14 +112,21 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
                   Ignores flaky external integrations or network timeouts to prevent false fixes.
                 </span>
               </div>
-            </label>
+            </motion.label>
 
-            <label className="flex items-start space-x-3 p-4 bg-[#080808] rounded-lg border border-[#1a1a1a] cursor-pointer hover:border-white/20 transition-colors">
+            <motion.label
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-start space-x-3 p-4 bg-[#080808] rounded-lg border border-[#1a1a1a] cursor-pointer hover:border-white/20 transition-colors"
+            >
               <input
                 type="checkbox"
                 checked={localSettings.autoCommitAndPush}
-                onChange={(e) => setLocalSettings({ ...localSettings, autoCommitAndPush: e.target.checked })}
-                className="mt-1 accent-[#4ade80] rounded w-4 h-4"
+                onChange={(e) => {
+                  playTactileSound('toggle', soundFxEnabled);
+                  setLocalSettings({ ...localSettings, autoCommitAndPush: e.target.checked });
+                }}
+                className="mt-1 accent-[#4ade80] rounded w-4 h-4 cursor-pointer"
               />
               <div>
                 <span className="text-xs font-bold text-white block font-sans">Auto-Push Hotfix to Branch</span>
@@ -106,7 +134,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
                   Pushes green commits directly to GitHub without requiring manual approval click.
                 </span>
               </div>
-            </label>
+            </motion.label>
           </div>
 
           {/* GitHub Credentials */}
@@ -143,13 +171,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSaveSe
               </span>
             )}
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
               onClick={handleSave}
-              className="px-5 py-2 bg-[#4ade80] hover:bg-[#3ecf73] text-black font-bold rounded-md shadow-md text-xs font-mono uppercase tracking-wider transition-all flex items-center space-x-1.5"
+              className="px-5 py-2 bg-[#4ade80] hover:bg-[#3ecf73] text-black font-bold rounded-md shadow-md text-xs font-mono uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Save Guardrails</span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>

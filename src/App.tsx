@@ -9,6 +9,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { ControlTowerSidebar } from './components/ControlTowerSidebar';
 import { PipelineVisualizer } from './components/PipelineVisualizer';
 import { AIThinkingPanel } from './components/AIThinkingPanel';
+import { TabTransitionWrapper } from './components/TabTransitionWrapper';
 import { WebhookEvent, AgentSettings, LogEntry } from './types';
 import { playTactileSound } from './utils/sound';
 import { Radio, X, Sparkles } from 'lucide-react';
@@ -218,9 +219,14 @@ export default function App() {
       {/* Header Bar */}
       <Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(t) => {
+          playTactileSound('tab', settings.soundFxEnabled);
+          setActiveTab(t);
+        }}
         webhookCount={webhooks.length}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        soundFxEnabled={settings.soundFxEnabled}
+        onToggleSoundFx={() => handleUpdateSettings({ ...settings, soundFxEnabled: !(settings.soundFxEnabled ?? true) })}
       />
 
       {/* Interactive Command Palette Modal (Cmd + K) */}
@@ -268,83 +274,86 @@ export default function App() {
         )}
 
         {/* 3-Column Cyber Command Workspace Architecture */}
-        {activeTab === 'simulator' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column: Control Tower Sidebar (3 Cols) */}
-            <div className="lg:col-span-3">
-              <ControlTowerSidebar
-                settings={settings}
-                onUpdateSettings={handleUpdateSettings}
-                selectedRepo={selectedRepo}
-                onSelectRepo={setSelectedRepo}
-              />
+        <TabTransitionWrapper activeTab={activeTab}>
+          {activeTab === 'simulator' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Control Tower Sidebar (3 Cols) */}
+              <div className="lg:col-span-3">
+                <ControlTowerSidebar
+                  settings={settings}
+                  onUpdateSettings={handleUpdateSettings}
+                  selectedRepo={selectedRepo}
+                  onSelectRepo={setSelectedRepo}
+                />
+              </div>
+
+              {/* Center Main Stage: Active Pipeline Visualizer & Diff Viewer (6 Cols) */}
+              <div className="lg:col-span-6 space-y-6">
+                <PipelineVisualizer
+                  status={currentStatus}
+                  onSimulateWebhook={handleSimulateWebhook}
+                  onRunAgent={handleRunAgent}
+                  soundFxEnabled={settings.soundFxEnabled}
+                />
+
+                <PRSimulator
+                  settings={settings}
+                  onWebhookReceived={fetchWebhooks}
+                />
+              </div>
+
+              {/* Right Column: AI Thinking Panel & Terminal Log (3 Cols) */}
+              <div className="lg:col-span-3">
+                <AIThinkingPanel
+                  logs={currentLogs}
+                  status={currentStatus}
+                  tokensUsed={tokensUsed}
+                  executionTimeMs={executionTimeMs}
+                  onApproveAndMerge={() => {
+                    setCurrentStatus('resolved');
+                    playTactileSound('success', settings.soundFxEnabled);
+                  }}
+                  onDeclineAndRevert={() => {
+                    setCurrentStatus('failed');
+                    playTactileSound('alert', settings.soundFxEnabled);
+                  }}
+                  onRunAgent={handleRunAgent}
+                  soundFxEnabled={settings.soundFxEnabled}
+                />
+              </div>
             </div>
+          )}
 
-            {/* Center Main Stage: Active Pipeline Visualizer & Diff Viewer (6 Cols) */}
-            <div className="lg:col-span-6 space-y-6">
-              <PipelineVisualizer
-                status={currentStatus}
-                onSimulateWebhook={handleSimulateWebhook}
-                onRunAgent={handleRunAgent}
-              />
+          {/* Real-Time Status Monitor Tab */}
+          {activeTab === 'status' && (
+            <RealTimeStatus
+              onSelectPR={() => setActiveTab('simulator')}
+            />
+          )}
 
-              <PRSimulator
-                settings={settings}
-                onWebhookReceived={fetchWebhooks}
-              />
-            </div>
+          {/* Webhook Payload Inspector Tab */}
+          {activeTab === 'webhooks' && (
+            <WebhookInspector
+              events={webhooks}
+              onClear={handleClearWebhooks}
+              onRefresh={fetchWebhooks}
+              onTriggerTriage={() => setActiveTab('simulator')}
+            />
+          )}
 
-            {/* Right Column: AI Thinking Panel & Terminal Log (3 Cols) */}
-            <div className="lg:col-span-3">
-              <AIThinkingPanel
-                logs={currentLogs}
-                status={currentStatus}
-                tokensUsed={tokensUsed}
-                executionTimeMs={executionTimeMs}
-                onApproveAndMerge={() => {
-                  setCurrentStatus('resolved');
-                  playTactileSound('success', settings.soundFxEnabled);
-                }}
-                onDeclineAndRevert={() => {
-                  setCurrentStatus('failed');
-                  playTactileSound('alert', settings.soundFxEnabled);
-                }}
-                onRunAgent={handleRunAgent}
-                soundFxEnabled={settings.soundFxEnabled}
-              />
-            </div>
-          </div>
-        )}
+          {/* Guardrails Settings Tab */}
+          {activeTab === 'settings' && (
+            <SettingsPanel
+              settings={settings}
+              onSaveSettings={handleUpdateSettings}
+            />
+          )}
 
-        {/* Real-Time Status Monitor Tab */}
-        {activeTab === 'status' && (
-          <RealTimeStatus
-            onSelectPR={() => setActiveTab('simulator')}
-          />
-        )}
-
-        {/* Webhook Payload Inspector Tab */}
-        {activeTab === 'webhooks' && (
-          <WebhookInspector
-            events={webhooks}
-            onClear={handleClearWebhooks}
-            onRefresh={fetchWebhooks}
-            onTriggerTriage={() => setActiveTab('simulator')}
-          />
-        )}
-
-        {/* Guardrails Settings Tab */}
-        {activeTab === 'settings' && (
-          <SettingsPanel
-            settings={settings}
-            onSaveSettings={handleUpdateSettings}
-          />
-        )}
-
-        {/* Production Architecture Guide Tab */}
-        {activeTab === 'architecture' && (
-          <ArchitectureGuide />
-        )}
+          {/* Production Architecture Guide Tab */}
+          {activeTab === 'architecture' && (
+            <ArchitectureGuide />
+          )}
+        </TabTransitionWrapper>
       </main>
 
       {/* Cyber-Terminal Footer */}
